@@ -1,57 +1,95 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { Tabs, useRouter } from 'expo-router';
+import { Home, PieChart, Plus, Receipt, Settings } from 'lucide-react-native';
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { Platform, TouchableOpacity } from 'react-native';
+import { useAppTheme } from '../../src/theme'; // Use hook
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const { colors } = useAppTheme(); // Get dynamic colors
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowColor: colors.shadow,
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: -4 },
+          shadowRadius: 16,
+          backgroundColor: colors.card,
+          height: Platform.OS === 'ios' ? 88 : 70, // Taller premium tab bar
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 12,
+          position: 'absolute', // Floating effect if desired, but sticking to bottom is safer for safe-area
+        },
+        headerShown: false,
+        sceneStyle: { backgroundColor: colors.background },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Home size={24} color={color} strokeWidth={1.5} />,
+        }}
+      />
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          title: 'Expenses',
+          tabBarIcon: ({ color }) => <Receipt size={24} color={color} strokeWidth={1.5} />,
+        }}
+      />
+      <Tabs.Screen
+        name="scan_placeholder"
+        options={{
+          title: '',
+          tabBarIcon: ({ color }) => (
+            <LinearGradient
+              colors={[colors.primary, '#4F46E5']} // Gradient for scan button
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: Platform.OS === 'ios' ? 24 : 40,
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.4,
+                shadowRadius: 12,
+                elevation: 8,
+              }}
+            >
+              <Plus size={32} color="white" strokeWidth={2} />
+            </LinearGradient>
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              activeOpacity={0.8}
+              onPress={() => router.push('/scanner')}
+            />
           ),
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="analytics"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Analytics',
+          tabBarIcon: ({ color }) => <PieChart size={24} color={color} strokeWidth={1.5} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Settings size={24} color={color} strokeWidth={1.5} />,
         }}
       />
     </Tabs>
