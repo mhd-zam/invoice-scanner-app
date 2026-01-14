@@ -32,7 +32,7 @@ export default function AnalyticsScreen() {
         >
             <Typography variant="header2" style={{ marginBottom: spacing.l }}>Analytics</Typography>
 
-            <Card style={styles.chartCard}>
+            <Card style={styles.chartCard} variant="elevated">
                 <Typography variant="header3" style={{ marginBottom: spacing.m }}>Spending by Category</Typography>
 
                 {data.length === 0 ? (
@@ -41,8 +41,8 @@ export default function AnalyticsScreen() {
                     data.map((item) => (
                         <View key={item.name} style={styles.barContainer}>
                             <View style={styles.barLabel}>
-                                <Typography variant="body">{item.name}</Typography>
-                                <Typography variant="bodyBold">₹{item.amount.toFixed(0)}</Typography>
+                                <Typography variant="bodyBold" style={{ marginBottom: 4 }}>{item.name}</Typography>
+                                <Typography variant="bodyBold" color={colors.primary}>₹{item.amount.toFixed(2)}</Typography>
                             </View>
                             <View style={[styles.track, { backgroundColor: colors.muted }]}>
                                 <View style={[styles.bar, { width: `${(item.amount / maxAmount) * 100}%`, backgroundColor: colors.primary }]} />
@@ -52,9 +52,10 @@ export default function AnalyticsScreen() {
                 )}
             </Card>
 
-            <Card style={{ marginTop: spacing.l }}>
-                <Typography variant="header3" style={{ marginBottom: spacing.s }}>Total Spend</Typography>
-                <Typography variant="header1" color={colors.primary}>₹{totalSpend.toFixed(2)}</Typography>
+            <Card style={{ marginTop: spacing.l, padding: spacing.l }} variant="elevated">
+                <Typography variant="header3" style={{ marginBottom: spacing.xs }}>Total Spend</Typography>
+                <Typography variant="display" color={colors.primary}>₹{totalSpend.toFixed(2)}</Typography>
+                <Typography variant="caption" color={colors.textSecondary}>Across all categories</Typography>
             </Card>
         </ScrollView>
     );

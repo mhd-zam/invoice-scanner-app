@@ -2,6 +2,13 @@ import { TextStyle } from 'react-native';
 import { colors } from './colors';
 
 export const typography = {
+    display: {
+        fontSize: 48,
+        fontWeight: '700',
+        lineHeight: 56,
+        color: colors.text,
+        letterSpacing: -1,
+    } as TextStyle,
     header1: {
         fontSize: 32,
         fontWeight: '700',

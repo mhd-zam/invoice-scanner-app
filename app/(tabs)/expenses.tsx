@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Search } from 'lucide-react-native';
+import { Search, ShoppingBag } from 'lucide-react-native';
 import { useState } from 'react';
 import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Card } from '../../src/components/Card';
@@ -45,17 +45,19 @@ export default function ExpensesScreen() {
                 contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => router.push(`/expense/${item.id}`)} activeOpacity={0.7}>
-                        <Card style={styles.expenseItem} variant="flat">
-                            <View style={styles.expenseLeft}>
-                                <View style={[styles.iconPlaceholder, { backgroundColor: colors.card }]}>
-                                    <Typography variant="header3">{item.merchantName.charAt(0)}</Typography>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Typography variant="bodyBold" numberOfLines={1}>{item.merchantName}</Typography>
-                                    <Typography variant="caption">{new Date(item.date).toLocaleDateString()}</Typography>
-                                </View>
+                        <Card style={styles.expenseItem} variant="elevated">
+                            <View style={[styles.iconContainer, { backgroundColor: colors.background }]}>
+                                <ShoppingBag size={24} color={colors.text} strokeWidth={1.5} />
                             </View>
-                            <Typography variant="bodyBold">₹{item.totalAmount.toFixed(2)}</Typography>
+                            <View style={styles.infoContainer}>
+                                <Typography variant="bodyBold" numberOfLines={1}>{item.merchantName}</Typography>
+                                <Typography variant="caption" color={colors.textSecondary}>
+                                    {new Date(item.date).toLocaleDateString()} • {item.category}
+                                </Typography>
+                            </View>
+                            <Typography variant="bodyBold" style={{ color: colors.text }}>
+                                ₹{item.totalAmount.toFixed(2)}
+                            </Typography>
                         </Card>
                     </TouchableOpacity>
                 )}
@@ -103,24 +105,21 @@ const styles = StyleSheet.create({
     },
     expenseItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.s,
-        paddingVertical: spacing.m,
+        marginBottom: spacing.m,
+        padding: spacing.m,
+        borderRadius: radius.l,
     },
-    expenseLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-        marginRight: spacing.m,
-    },
-    iconPlaceholder: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: radius.m,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.m,
+    },
+    infoContainer: {
+        flex: 1,
     },
     emptyState: {
         padding: spacing.xl,

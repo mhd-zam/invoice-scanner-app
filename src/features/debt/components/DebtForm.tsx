@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowUp } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
@@ -18,6 +18,7 @@ export const DebtForm = ({ initialValues, isEditing = false }: DebtFormProps) =>
     const { colors } = useAppTheme();
     const addDebt = useDebtStore((s) => s.addDebt);
     const updateDebt = useDebtStore((s) => s.updateDebt);
+    const deleteDebt = useDebtStore((s) => s.deleteDebt);
 
     const [type, setType] = useState<'receive' | 'give'>(initialValues?.type || 'receive');
     const [amount, setAmount] = useState(initialValues?.amount?.toString() || '');
@@ -141,6 +142,23 @@ export const DebtForm = ({ initialValues, isEditing = false }: DebtFormProps) =>
                 variant="primary"
                 style={{ marginTop: spacing.l, backgroundColor: themeColor }}
             />
+
+            {isEditing && (
+                <View style={{ marginTop: spacing.l }}>
+                    <Button
+                        title="Delete Debt"
+                        onPress={() => {
+                            if (initialValues?.id) {
+                                deleteDebt(initialValues.id);
+                                router.back();
+                            }
+                        }}
+                        variant="ghost"
+                        style={{ backgroundColor: colors.error + '10' }}
+                        icon={<Trash2 size={20} color={colors.error} />}
+                    />
+                </View>
+            )}
         </ScrollView>
     );
 };

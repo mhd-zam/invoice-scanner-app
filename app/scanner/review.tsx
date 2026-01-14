@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '../../src/components/Button';
+import { Input } from '../../src/components/Input';
 import { Typography } from '../../src/components/Typography';
 import { useExpenseStore } from '../../src/features/expenses/store/useExpenseStore';
 import { analyzeReceipt } from '../../src/features/scanner/services/ocrService';
@@ -90,68 +91,36 @@ export default function ReviewScreen() {
                         Review Receipt ({images.length} pages)
                     </Typography>
 
-                    <View style={styles.inputGroup}>
-                        <Typography variant="label" style={{ marginBottom: spacing.xs }}>Merchant</Typography>
-                        <TextInput
-                            style={[styles.input, {
-                                backgroundColor: colors.inputBackground,
-                                borderColor: colors.border,
-                                color: colors.text
-                            }]}
-                            value={merchant}
-                            onChangeText={setMerchant}
-                            placeholder="Merchant Name"
-                            placeholderTextColor={colors.textSecondary}
-                            editable={!analyzing}
-                        />
-                    </View>
+                    <Input
+                        label="Merchant"
+                        value={merchant}
+                        onChangeText={setMerchant}
+                        placeholder="Merchant Name"
+                        editable={!analyzing}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Typography variant="label" style={{ marginBottom: spacing.xs }}>Total Amount</Typography>
-                        <TextInput
-                            style={[styles.input, {
-                                backgroundColor: colors.inputBackground,
-                                borderColor: colors.border,
-                                color: colors.text
-                            }]}
-                            value={total}
-                            onChangeText={setTotal}
-                            keyboardType="decimal-pad"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.textSecondary}
-                            editable={!analyzing}
-                        />
-                    </View>
+                    <Input
+                        label="Total Amount"
+                        value={total}
+                        onChangeText={setTotal}
+                        keyboardType="decimal-pad"
+                        placeholder="0.00"
+                        editable={!analyzing}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Typography variant="label" style={{ marginBottom: spacing.xs }}>Category</Typography>
-                        <TextInput
-                            style={[styles.input, {
-                                backgroundColor: colors.inputBackground,
-                                borderColor: colors.border,
-                                color: colors.text
-                            }]}
-                            value={category}
-                            onChangeText={setCategory}
-                            placeholder="Category (e.g. Food)"
-                            placeholderTextColor={colors.textSecondary}
-                            editable={!analyzing}
-                        />
-                    </View>
+                    <Input
+                        label="Category"
+                        value={category}
+                        onChangeText={setCategory}
+                        placeholder="Category (e.g. Food)"
+                        editable={!analyzing}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Typography variant="label" style={{ marginBottom: spacing.xs }}>Date</Typography>
-                        <TextInput
-                            style={[styles.input, {
-                                backgroundColor: colors.inputBackground,
-                                borderColor: colors.border,
-                                color: colors.text
-                            }]}
-                            value={date ? new Date(date).toLocaleDateString() : ''}
-                            // Simple text for now, should use DatePicker
-                            editable={false}
-                        />
-                    </View>
+                    <Input
+                        label="Date"
+                        value={date ? new Date(date).toLocaleDateString() : ''}
+                        editable={false} // Simple text for now, should use DatePicker
+                    />
 
                     <Button
                         title={analyzing ? "Analyzing..." : "Save Expense"}
@@ -210,15 +179,5 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 5,
         flex: 1,
-    },
-    inputGroup: {
-        marginBottom: spacing.m,
-    },
-    input: {
-        height: 48,
-        borderWidth: 1,
-        borderRadius: radius.m,
-        paddingHorizontal: spacing.m,
-        fontSize: 16,
     },
 });
