@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, useRouter } from 'expo-router';
-import { Home, PieChart, Plus, Receipt, Settings } from 'lucide-react-native';
+import { Banknote, Home, PieChart, Plus, Receipt, Settings } from 'lucide-react-native';
 import React from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '../../src/theme'; // Use hook
@@ -76,6 +76,13 @@ export default function TabLayout() {
               onPress={() => router.push('/scanner')}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="debt"
+        options={{
+          title: 'Debts',
+          tabBarIcon: ({ color }) => <Banknote size={24} color={color} strokeWidth={1.5} />,
         }}
       />
       <Tabs.Screen
