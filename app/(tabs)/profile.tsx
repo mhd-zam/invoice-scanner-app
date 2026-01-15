@@ -1,14 +1,17 @@
 import { Info, Moon, Trash2, User } from 'lucide-react-native';
-import { Alert, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
 import { useExpenseStore } from '../../src/features/expenses/store/useExpenseStore';
 import { spacing, useAppTheme } from '../../src/theme';
 
+import { useAuth } from '../../src/store/authStore';
+
 export default function ProfileScreen() {
     const { expenses, deleteExpense } = useExpenseStore();
     const { colors, isDark } = useAppTheme();
+    const { signOut, user } = useAuth();
 
     const handleReset = () => {
         Alert.alert("Clear Data", "Are you sure? This cannot be undone.", [
@@ -60,6 +63,13 @@ export default function ProfileScreen() {
                 </View>
                 <Button title="Delete All" onPress={handleReset} variant="outline" style={{ marginTop: spacing.s, borderColor: colors.error }} />
             </Card>
+
+            <TouchableOpacity
+                style={{ marginTop: spacing.xl, marginBottom: spacing.xl, alignItems: 'center' }}
+                onPress={signOut}
+            >
+                <Typography variant="body" color={colors.primary}>Log Out</Typography>
+            </TouchableOpacity>
 
             {/* About Section */}
             <Typography variant="label" style={styles.sectionLabel}>ABOUT</Typography>

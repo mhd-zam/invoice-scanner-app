@@ -1,6 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, useRouter } from 'expo-router';
-import { Banknote, Home, PieChart, Plus, Receipt } from 'lucide-react-native';
 import React from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { spacing, useAppTheme } from '../../src/theme'; // Use hook
@@ -31,6 +31,8 @@ export default function TabLayout() {
           shadowRadius: 16,
           paddingBottom: Platform.OS === 'ios' ? 8 : 10,
           paddingTop: 8,
+          marginLeft: spacing.m,
+          marginRight: spacing.m,
         },
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
@@ -40,14 +42,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Home size={24} color={color} strokeWidth={1.5} />,
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="expenses"
         options={{
           title: 'Expenses',
-          tabBarIcon: ({ color }) => <Receipt size={24} color={color} strokeWidth={1.5} />,
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "receipt" : "receipt-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -71,7 +73,7 @@ export default function TabLayout() {
                 elevation: 8,
               }}
             >
-              <Plus size={32} color="white" strokeWidth={2} />
+              <Ionicons name="scan" size={28} color="white" />
             </LinearGradient>
           ),
           tabBarButton: (props) => (
@@ -94,14 +96,14 @@ export default function TabLayout() {
         name="debt"
         options={{
           title: 'Debts',
-          tabBarIcon: ({ color }) => <Banknote size={24} color={color} strokeWidth={1.5} />,
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "card" : "card-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',
-          tabBarIcon: ({ color }) => <PieChart size={24} color={color} strokeWidth={1.5} />,
+          tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "pie-chart" : "pie-chart-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
