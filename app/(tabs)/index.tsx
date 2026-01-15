@@ -25,7 +25,10 @@ export default function HomeScreen() {
           <Typography variant="header2" color={colors.textSecondary} style={{ marginBottom: 4 }}>Hi There,</Typography>
           <Typography variant="header1">Daily Tracker</Typography>
         </View>
-        <TouchableOpacity style={[styles.profileButton, { backgroundColor: colors.muted }]}>
+        <TouchableOpacity
+          style={[styles.profileButton, { backgroundColor: colors.muted }]}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
           {/* Placeholder for Profile - could be an image or initial */}
           <Typography variant="bodyBold" color={colors.primary}>M</Typography>
         </TouchableOpacity>

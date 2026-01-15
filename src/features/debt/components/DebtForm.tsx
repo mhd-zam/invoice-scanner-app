@@ -1,7 +1,9 @@
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Typography } from '../../../components/Typography';
@@ -24,9 +26,20 @@ export const DebtForm = ({ initialValues, isEditing = false }: DebtFormProps) =>
     const [amount, setAmount] = useState(initialValues?.amount?.toString() || '');
     const [title, setTitle] = useState(initialValues?.title || '');
     const [personName, setPersonName] = useState(initialValues?.personName || '');
-    const [dueDate, setDueDate] = useState(initialValues?.dueDate || '');
+    const [dueDate, setDueDate] = useState<Date | undefined>(
+        initialValues?.dueDate ? new Date(initialValues.dueDate) : undefined
+    );
     const [notes, setNotes] = useState(initialValues?.notes || '');
     const [loading, setLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        const currentDate = selectedDate || dueDate;
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        setDueDate(currentDate);
+    };
 
     const handleSubmit = () => {
         if (!amount || !personName) return; // Basic validation
@@ -37,7 +50,7 @@ export const DebtForm = ({ initialValues, isEditing = false }: DebtFormProps) =>
             currency: 'INR', // Default to INR per previous context (User wants Rupee)
             title,
             personName,
-            dueDate,
+            dueDate: dueDate ? dueDate.toISOString() : undefined,
             notes,
         };
 
@@ -53,120 +66,167 @@ export const DebtForm = ({ initialValues, isEditing = false }: DebtFormProps) =>
     const themeColor = isReceive ? colors.success : colors.error;
 
     return (
-        <ScrollView contentContainerStyle={styles.content}>
-            {/* Scenario Selector */}
-            <View style={[styles.selectorContainer, { backgroundColor: colors.muted }]}>
-                <TouchableOpacity
-                    style={[
-                        styles.selectorOption,
-                        isReceive && { backgroundColor: colors.card, shadowColor: colors.shadow, elevation: 2 },
-                    ]}
-                    onPress={() => setType('receive')}
-                    activeOpacity={0.8}
-                >
-                    <ArrowDown size={20} color={isReceive ? colors.success : colors.textSecondary} />
-                    <Typography
-                        variant="bodyBold"
-                        color={isReceive ? colors.success : colors.textSecondary}
-                        style={{ marginLeft: spacing.s }}
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        >
+            <ScrollView contentContainerStyle={styles.content}>
+                {/* Scenario Selector */}
+                <View style={[styles.selectorContainer, { backgroundColor: colors.muted }]}>
+                    <TouchableOpacity
+                        style={[
+                            styles.selectorOption,
+                            isReceive && { backgroundColor: colors.card, shadowColor: colors.shadow, elevation: 2 },
+                        ]}
+                        onPress={() => setType('receive')}
+                        activeOpacity={0.8}
                     >
-                        To Receive
-                    </Typography>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[
-                        styles.selectorOption,
-                        !isReceive && { backgroundColor: colors.card, shadowColor: colors.shadow, elevation: 2 },
-                    ]}
-                    onPress={() => setType('give')}
-                    activeOpacity={0.8}
-                >
-                    <ArrowUp size={20} color={!isReceive ? colors.error : colors.textSecondary} />
-                    <Typography
-                        variant="bodyBold"
-                        color={!isReceive ? colors.error : colors.textSecondary}
-                        style={{ marginLeft: spacing.s }}
+                        <ArrowDown size={20} color={isReceive ? colors.success : colors.textSecondary} />
+                        <Typography
+                            variant="bodyBold"
+                            color={isReceive ? colors.success : colors.textSecondary}
+                            style={{ marginLeft: spacing.s }}
+                        >
+                            To Receive
+                        </Typography>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.selectorOption,
+                            !isReceive && { backgroundColor: colors.card, shadowColor: colors.shadow, elevation: 2 },
+                        ]}
+                        onPress={() => setType('give')}
+                        activeOpacity={0.8}
                     >
-                        To Give
-                    </Typography>
-                </TouchableOpacity>
-            </View>
-
-            <Typography variant="header2" style={{ textAlign: 'center', marginVertical: spacing.l }}>
-                {isReceive ? "Money you'll get back" : "Money you need to pay"}
-            </Typography>
-
-            <Input
-                label="Title (Optional)"
-                placeholder={isReceive ? "e.g. Loan to Rahul" : "e.g. Borrowed for Rent"}
-                value={title}
-                onChangeText={setTitle}
-            />
-
-            <Input
-                label="Amount"
-                placeholder="0.00"
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
-                style={{ color: themeColor, fontWeight: 'bold' }} // Visual differentiation
-            />
-
-            <Input
-                label="Person Name"
-                placeholder="Who is this associated with?"
-                value={personName}
-                onChangeText={setPersonName}
-            />
-
-            {/* Simplified Date Input for now, could use a DatePicker */}
-            <Input
-                label="Due Date (Optional)"
-                placeholder="YYYY-MM-DD"
-                value={dueDate}
-                onChangeText={setDueDate}
-            />
-
-            <Input
-                label="Notes (Optional)"
-                placeholder="Add any additional details..."
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                style={{ height: 80, textAlignVertical: 'top', paddingTop: spacing.s }}
-            />
-
-            <Button
-                title={isEditing ? "Save Changes" : "Save Debt"}
-                onPress={handleSubmit}
-                variant="primary"
-                style={{ marginTop: spacing.l, backgroundColor: themeColor }}
-            />
-
-            {isEditing && (
-                <View style={{ marginTop: spacing.l }}>
-                    <Button
-                        title="Delete Debt"
-                        onPress={() => {
-                            if (initialValues?.id) {
-                                deleteDebt(initialValues.id);
-                                router.back();
-                            }
-                        }}
-                        variant="ghost"
-                        style={{ backgroundColor: colors.error + '10' }}
-                        icon={<Trash2 size={20} color={colors.error} />}
-                    />
+                        <ArrowUp size={20} color={!isReceive ? colors.error : colors.textSecondary} />
+                        <Typography
+                            variant="bodyBold"
+                            color={!isReceive ? colors.error : colors.textSecondary}
+                            style={{ marginLeft: spacing.s }}
+                        >
+                            To Give
+                        </Typography>
+                    </TouchableOpacity>
                 </View>
-            )}
-        </ScrollView>
+
+                <Typography variant="header2" style={{ textAlign: 'center', marginVertical: spacing.l }}>
+                    {isReceive ? "Money you'll get back" : "Money you need to pay"}
+                </Typography>
+
+                <Input
+                    label="Title (Optional)"
+                    placeholder={isReceive ? "e.g. Loan to Rahul" : "e.g. Borrowed for Rent"}
+                    value={title}
+                    onChangeText={setTitle}
+                />
+
+                <Input
+                    label="Amount"
+                    placeholder="0.00"
+                    keyboardType="numeric"
+                    value={amount}
+                    onChangeText={setAmount}
+                    style={{ color: themeColor, fontWeight: 'bold' }} // Visual differentiation
+                />
+
+                <Input
+                    label="Person Name"
+                    placeholder="Who is this associated with?"
+                    value={personName}
+                    onChangeText={setPersonName}
+                />
+
+                {/* Date Input with Picker */}
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+                    <View pointerEvents="none">
+                        <Input
+                            label="Due Date (Optional)"
+                            placeholder="Select a date"
+                            value={dueDate ? format(dueDate, 'yyyy-MM-dd') : ''}
+                            editable={false}
+                        />
+                    </View>
+                </TouchableOpacity>
+
+                {showDatePicker && (
+                    Platform.OS === 'ios' ? (
+                        <Modal transparent animationType="slide" supportedOrientations={['portrait', 'landscape']}>
+                            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                                <View style={{ backgroundColor: colors.background, paddingBottom: spacing.l, borderTopLeftRadius: radius.l, borderTopRightRadius: radius.l }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: spacing.m, borderBottomWidth: 1, borderBottomColor: colors.muted }}>
+                                        <Button
+                                            title="Done"
+                                            onPress={() => setShowDatePicker(false)}
+                                            variant="ghost"
+                                            style={{ height: 40, paddingVertical: 0 }}
+                                        />
+                                    </View>
+                                    <DateTimePicker
+                                        testID="dateTimePicker"
+                                        value={dueDate || new Date()}
+                                        mode="date"
+                                        is24Hour={true}
+                                        display="spinner"
+                                        onChange={onDateChange}
+                                        textColor={colors.text}
+                                    />
+                                </View>
+                            </View>
+                        </Modal>
+                    ) : (
+                        <DateTimePicker
+                            testID="dateTimePicker"
+                            value={dueDate || new Date()}
+                            mode="date"
+                            is24Hour={true}
+                            onChange={onDateChange}
+                        />
+                    )
+                )}
+
+                <Input
+                    label="Notes (Optional)"
+                    placeholder="Add any additional details..."
+                    value={notes}
+                    onChangeText={setNotes}
+                    multiline
+                    style={{ height: 80, textAlignVertical: 'top', paddingTop: spacing.s }}
+                />
+
+                <Button
+                    title={isEditing ? "Save Changes" : "Save Debt"}
+                    onPress={handleSubmit}
+                    variant="primary"
+                    style={{ marginTop: spacing.l, backgroundColor: themeColor }}
+                />
+
+                {isEditing && (
+                    <View style={{ marginTop: spacing.l }}>
+                        <Button
+                            title="Delete Debt"
+                            onPress={() => {
+                                if (initialValues?.id) {
+                                    deleteDebt(initialValues.id);
+                                    router.back();
+                                }
+                            }}
+                            variant="ghost"
+                            style={{ backgroundColor: colors.error + '10' }}
+                            icon={<Trash2 size={20} color={colors.error} />}
+                        />
+                    </View>
+                )}
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
     content: {
         padding: spacing.l,
-        paddingBottom: spacing.xxl,
+        paddingBottom: spacing.xxl + 20,
+        flexGrow: 1,
     },
     selectorContainer: {
         flexDirection: 'row',

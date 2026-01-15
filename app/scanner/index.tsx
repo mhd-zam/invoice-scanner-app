@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { X, Zap, ZapOff } from 'lucide-react-native';
+import { Camera, X, Zap, ZapOff } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../src/components/Button';
@@ -31,11 +31,39 @@ export default function ScannerScreen() {
 
     if (!permission.granted) {
         return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <Typography variant="header3" style={{ textAlign: 'center', margin: spacing.xl }}>
-                    We need your permission to show the camera
+            <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: spacing.l }]}>
+                <View style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 50,
+                    backgroundColor: colors.primary + '15',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: spacing.l
+                }}>
+                    <Camera size={48} color={colors.primary} />
+                </View>
+
+                <Typography variant="header2" style={{ textAlign: 'center', marginBottom: spacing.s }}>
+                    Camera Access Needed
                 </Typography>
-                <Button onPress={requestPermission} title="Grant Permission" />
+
+                <Typography variant="body" color={colors.textSecondary} style={{ textAlign: 'center', marginBottom: spacing.xxl, maxWidth: '80%' }}>
+                    To scan and process your invoices directly, please allow camera access.
+                </Typography>
+
+                <Button
+                    onPress={requestPermission}
+                    title="Allow Camera Access"
+                    style={{ width: '100%', marginBottom: spacing.s }}
+                />
+
+                <Button
+                    onPress={() => router.back()}
+                    title="Not Now"
+                    variant="ghost"
+                    style={{ width: '100%' }}
+                />
             </View>
         );
     }

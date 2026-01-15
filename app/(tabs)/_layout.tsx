@@ -1,31 +1,36 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, useRouter } from 'expo-router';
-import { Banknote, Home, PieChart, Plus, Receipt, Settings } from 'lucide-react-native';
+import { Banknote, Home, PieChart, Plus, Receipt } from 'lucide-react-native';
 import React from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
-import { useAppTheme } from '../../src/theme'; // Use hook
+import { spacing, useAppTheme } from '../../src/theme'; // Use hook
 
 export default function TabLayout() {
   const router = useRouter();
   const { colors } = useAppTheme(); // Get dynamic colors
 
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: 'white',
+        tabBarInactiveTintColor: '#888',
         tabBarStyle: {
+          position: 'absolute',
+          bottom: spacing.l,
+          left: spacing.l, // Uniform spacing (24)
+          right: spacing.l,
+          height: 70,
+          borderRadius: 35,
+          backgroundColor: '#121212',
           borderTopWidth: 0,
           elevation: 10,
-          shadowColor: colors.shadow,
-          shadowOpacity: 0.1,
-          shadowOffset: { width: 0, height: -4 },
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowOffset: { width: 0, height: 8 },
           shadowRadius: 16,
-          backgroundColor: colors.card,
-          height: Platform.OS === 'ios' ? 88 : 70, // Taller premium tab bar
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          paddingTop: 12,
-          position: 'absolute', // Floating effect if desired, but sticking to bottom is safer for safe-area
+          paddingBottom: Platform.OS === 'ios' ? 8 : 10,
+          paddingTop: 8,
         },
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
@@ -71,7 +76,14 @@ export default function TabLayout() {
           ),
           tabBarButton: (props) => (
             <TouchableOpacity
-              {...props}
+              {...(props as any)}
+              delayLongPress={props.delayLongPress ?? undefined}
+              disabled={props.disabled === null ? undefined : props.disabled}
+              onBlur={props.onBlur ?? undefined}
+              onFocus={props.onFocus ?? undefined}
+              onLongPress={props.onLongPress ?? undefined}
+              onPressIn={props.onPressIn ?? undefined}
+              onPressOut={props.onPressOut ?? undefined}
               activeOpacity={0.8}
               onPress={() => router.push('/scanner')}
             />
@@ -93,10 +105,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Settings size={24} color={color} strokeWidth={1.5} />,
+          href: null, // Hide from tab bar
+          title: 'Profile',
         }}
       />
     </Tabs>
