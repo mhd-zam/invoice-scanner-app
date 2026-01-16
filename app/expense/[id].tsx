@@ -1,13 +1,15 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, Trash2, X } from 'lucide-react-native';
+import { Calendar, ChevronLeft, Package, Receipt, ShoppingBag, Tag, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
 import { useExpenseStore } from '../../src/features/expenses/store/useExpenseStore';
-import { radius, spacing, useAppTheme } from '../../src/theme';
+import { palette, radius, spacing, useAppTheme } from '../../src/theme';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function ExpenseDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -17,10 +19,19 @@ export default function ExpenseDetailScreen() {
     const expense = useExpenseStore(s => s.getExpenseById(id as string));
     const deleteExpense = useExpenseStore(s => s.deleteExpense);
 
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+
     if (!expense) {
         return (
             <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-                <Typography variant="header3">Expense not found</Typography>
+                <Receipt size={64} color={colors.textSecondary} strokeWidth={1} />
+                <Typography variant="header3" style={{ marginTop: spacing.m }}>Expense not found</Typography>
+                <TouchableOpacity
+                    style={[styles.goBackButton, { backgroundColor: colors.primary }]}
+                    onPress={() => router.back()}
+                >
+                    <Typography variant="bodyBold" color="white">Go Back</Typography>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -41,104 +52,189 @@ export default function ExpenseDetailScreen() {
 
     const imageUrls = expense.imageUrls && expense.imageUrls.length > 0
         ? expense.imageUrls
-        // @ts-ignore: Legacy support if migration failed or strictness isn't perfect
+        // @ts-ignore: Legacy support
         : (expense.imageUrl ? [expense.imageUrl] : []);
 
-    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    };
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Custom Header */}
-            <View style={[styles.header, { paddingTop: insets.top + spacing.s, backgroundColor: colors.background }]}>
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    style={[styles.headerButton, { backgroundColor: colors.card }]}
-                >
-                    <ChevronLeft size={24} color={colors.text} />
-                </TouchableOpacity>
-                <Typography variant="header3">Expense Details</Typography>
-                <TouchableOpacity
-                    onPress={handleDelete}
-                    style={[styles.headerButton, { backgroundColor: colors.error + '15' }]}
-                >
-                    <Trash2 size={20} color={colors.error} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.container}>
-                {/* Image Carousel */}
+            {/* Header with gradient overlay on image */}
+            <View style={styles.imageSection}>
                 {imageUrls.length > 0 ? (
-                    <ScrollView
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        style={{ height: 400, backgroundColor: colors.muted, marginBottom: spacing.l }}
-                    >
-                        {imageUrls.map((img, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.imagePage}
-                                onPress={() => setSelectedImageIndex(index)}
-                                activeOpacity={0.9}
-                            >
-                                <Image source={{ uri: img }} style={styles.image} resizeMode="contain" />
-                                <View style={styles.pageIndicator}>
-                                    <Typography variant="label" color="white">{index + 1}/{imageUrls.length}</Typography>
-                                </View>
-                                <View style={styles.tapHint}>
-                                    <Typography variant="caption" color="white">Tap to preview</Typography>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    <>
+                        <ScrollView
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.imageCarousel}
+                        >
+                            {imageUrls.map((img, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.imagePage}
+                                    onPress={() => setSelectedImageIndex(index)}
+                                    activeOpacity={0.95}
+                                >
+                                    <Image source={{ uri: img }} style={styles.image} resizeMode="cover" />
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Gradient overlay for header */}
+                        <LinearGradient
+                            colors={['rgba(0,0,0,0.5)', 'transparent']}
+                            style={styles.headerGradient}
+                        />
+
+                        {/* Page indicator */}
+                        {imageUrls.length > 1 && (
+                            <View style={styles.pageIndicator}>
+                                {imageUrls.map((_, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.dot,
+                                            { backgroundColor: index === 0 ? 'white' : 'rgba(255,255,255,0.5)' }
+                                        ]}
+                                    />
+                                ))}
+                            </View>
+                        )}
+                    </>
                 ) : (
-                    <View style={[styles.placeholder, { backgroundColor: colors.muted }]}>
-                        <Typography variant="body" color={colors.textSecondary}>No image available</Typography>
+                    <View style={[styles.noImagePlaceholder, { backgroundColor: colors.muted }]}>
+                        <Receipt size={64} color={colors.textSecondary} strokeWidth={1} />
+                        <Typography variant="body" color={colors.textSecondary} style={{ marginTop: spacing.m }}>
+                            No receipt image
+                        </Typography>
                     </View>
                 )}
 
-                <View style={styles.details}>
-                    <View style={styles.headerRow}>
-                        <View style={{ flex: 1 }}>
-                            <Typography variant="header2">{expense.merchantName}</Typography>
-                            <Typography variant="body" color={colors.textSecondary}>{new Date(expense.date).toLocaleDateString()}</Typography>
-                        </View>
-                        <Typography variant="header2" color={colors.primary}>₹{expense.totalAmount.toFixed(2)}</Typography>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                    <View style={styles.row}>
-                        <Typography variant="body" color={colors.textSecondary}>Status</Typography>
-                        <View style={[styles.statusBadge, { backgroundColor: colors.success + '20' }]}>
-                            <Typography variant="label" color={colors.success}>{expense.status.toUpperCase()}</Typography>
-                        </View>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                    <View style={styles.row}>
-                        <Typography variant="body" color={colors.textSecondary}>Category</Typography>
-                        <Typography variant="bodyBold">{expense.category}</Typography>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                    <Typography variant="header3" style={{ marginTop: spacing.m, marginBottom: spacing.s }}>Items</Typography>
-                    {expense.items && expense.items.length > 0 ? (
-                        expense.items.map((item, idx) => (
-                            <View key={idx} style={styles.itemRow}>
-                                <Typography variant="body">{item.name}</Typography>
-                                <Typography variant="bodyBold">₹{item.amount.toFixed(2)}</Typography>
-                            </View>
-                        ))
-                    ) : (
-                        <Typography variant="body" color={colors.textSecondary}>No line items detected.</Typography>
-                    )}
+                {/* Fixed Header Buttons */}
+                <View style={[styles.headerButtons, { top: insets.top + spacing.s }]}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.headerBtn}
+                    >
+                        <ChevronLeft size={24} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleDelete}
+                        style={[styles.headerBtn, { backgroundColor: 'rgba(239,68,68,0.8)' }]}
+                    >
+                        <Trash2 size={20} color="white" />
+                    </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </View>
+
+            {/* Content Card */}
+            <View style={[styles.contentCard, { backgroundColor: colors.background }]}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    {/* Amount & Merchant */}
+                    <View style={styles.mainInfo}>
+                        <View style={styles.amountRow}>
+                            <Typography variant="display" style={[styles.amount, { color: colors.text }]}>
+                                ₹{expense.totalAmount.toLocaleString('en-IN')}
+                            </Typography>
+                            <View style={[
+                                styles.statusBadge,
+                                { backgroundColor: expense.status === 'verified' ? colors.success + '20' : colors.warning + '20' }
+                            ]}>
+                                <Typography
+                                    variant="label"
+                                    color={expense.status === 'verified' ? colors.success : colors.warning}
+                                >
+                                    {expense.status?.toUpperCase() || 'PENDING'}
+                                </Typography>
+                            </View>
+                        </View>
+                        <Typography variant="header3" style={{ marginTop: spacing.xs }}>
+                            {expense.merchantName}
+                        </Typography>
+                    </View>
+
+                    {/* Info Cards */}
+                    <View style={styles.infoGrid}>
+                        <Card style={[styles.infoCard, { flex: 1 }]}>
+                            <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
+                                <Calendar size={18} color={colors.primary} />
+                            </View>
+                            <Typography variant="caption" color={colors.textSecondary}>Date</Typography>
+                            <Typography variant="bodyBold" style={{ marginTop: 2 }}>
+                                {formatDate(expense.date)}
+                            </Typography>
+                        </Card>
+
+                        <Card style={[styles.infoCard, { flex: 1 }]}>
+                            <View style={[styles.infoIcon, { backgroundColor: palette.primary[100] }]}>
+                                <Tag size={18} color={colors.primary} />
+                            </View>
+                            <Typography variant="caption" color={colors.textSecondary}>Category</Typography>
+                            <Typography variant="bodyBold" style={{ marginTop: 2 }}>
+                                {expense.category || 'Uncategorized'}
+                            </Typography>
+                        </Card>
+                    </View>
+
+                    {/* Items Section */}
+                    <View style={styles.itemsSection}>
+                        <View style={styles.sectionHeader}>
+                            <Package size={18} color={colors.text} />
+                            <Typography variant="header3" style={{ marginLeft: spacing.s }}>
+                                Items
+                            </Typography>
+                            <Typography variant="caption" color={colors.textSecondary} style={{ marginLeft: 'auto' }}>
+                                {expense.items?.length || 0} items
+                            </Typography>
+                        </View>
+
+                        <Card style={styles.itemsCard}>
+                            {expense.items && expense.items.length > 0 ? (
+                                expense.items.map((item, idx) => (
+                                    <View
+                                        key={idx}
+                                        style={[
+                                            styles.itemRow,
+                                            idx !== expense.items!.length - 1 && {
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: colors.border
+                                            }
+                                        ]}
+                                    >
+                                        <View style={[styles.itemDot, { backgroundColor: colors.primary }]} />
+                                        <Typography variant="body" style={{ flex: 1 }} numberOfLines={2}>
+                                            {item.name}
+                                        </Typography>
+                                        <Typography variant="bodyBold" color={colors.text}>
+                                            ₹{item.amount.toFixed(0)}
+                                        </Typography>
+                                    </View>
+                                ))
+                            ) : (
+                                <View style={styles.noItems}>
+                                    <ShoppingBag size={32} color={colors.textSecondary} strokeWidth={1} />
+                                    <Typography variant="body" color={colors.textSecondary} style={{ marginTop: spacing.s }}>
+                                        No items detected
+                                    </Typography>
+                                </View>
+                            )}
+                        </Card>
+                    </View>
+                </ScrollView>
+            </View>
 
             {/* Fullscreen Image Preview Modal */}
             <Modal
@@ -149,10 +245,10 @@ export default function ExpenseDetailScreen() {
             >
                 <View style={styles.modalContainer}>
                     <TouchableOpacity
-                        style={styles.modalCloseButton}
+                        style={[styles.modalCloseButton, { top: insets.top + spacing.m }]}
                         onPress={() => setSelectedImageIndex(null)}
                     >
-                        <X size={28} color="white" />
+                        <X size={24} color="white" />
                     </TouchableOpacity>
 
                     <ScrollView
@@ -172,7 +268,7 @@ export default function ExpenseDetailScreen() {
                         ))}
                     </ScrollView>
 
-                    <View style={styles.modalPageIndicator}>
+                    <View style={[styles.modalPageIndicator, { bottom: insets.bottom + spacing.xl }]}>
                         <Typography variant="body" color="white">
                             {(selectedImageIndex || 0) + 1} / {imageUrls.length}
                         </Typography>
@@ -185,89 +281,146 @@ export default function ExpenseDetailScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        paddingBottom: spacing.xl,
+        flex: 1,
     },
     center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: spacing.xl,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.m,
-        paddingBottom: spacing.s,
+    goBackButton: {
+        marginTop: spacing.l,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.m,
+        borderRadius: radius.full,
     },
-    headerButton: {
-        width: 40,
-        height: 40,
-        borderRadius: radius.m,
-        justifyContent: 'center',
-        alignItems: 'center',
+    imageSection: {
+        height: height * 0.35,
+        position: 'relative',
+    },
+    imageCarousel: {
+        flex: 1,
     },
     imagePage: {
         width: width,
-        height: 400,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
+        height: '100%',
     },
     image: {
         width: '100%',
         height: '100%',
     },
-    placeholder: {
-        height: 200,
+    headerGradient: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 120,
+    },
+    noImagePlaceholder: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: spacing.l,
+    },
+    headerButtons: {
+        position: 'absolute',
+        left: spacing.m,
+        right: spacing.m,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    headerBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     pageIndicator: {
         position: 'absolute',
         bottom: spacing.m,
-        right: spacing.m,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        paddingHorizontal: spacing.s,
-        paddingVertical: spacing.xs,
-        borderRadius: radius.m,
-    },
-    details: {
-        paddingHorizontal: spacing.l,
-    },
-    headerRow: {
+        left: 0,
+        right: 0,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: spacing.m,
+        justifyContent: 'center',
+        gap: spacing.xs,
     },
-    divider: {
-        height: 1,
-        marginVertical: spacing.m,
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
-    row: {
+    contentCard: {
+        flex: 1,
+        marginTop: -24,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        overflow: 'hidden',
+    },
+    scrollContent: {
+        padding: spacing.l,
+        paddingBottom: 100,
+    },
+    mainInfo: {
+        marginBottom: spacing.l,
+    },
+    amountRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    amount: {
+        fontSize: 36,
+        fontWeight: '700',
     },
     statusBadge: {
-        paddingHorizontal: spacing.s,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: spacing.m,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
+    },
+    infoGrid: {
+        flexDirection: 'row',
+        gap: spacing.m,
+        marginBottom: spacing.l,
+    },
+    infoCard: {
+        padding: spacing.m,
+    },
+    infoIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.m,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacing.s,
+    },
+    itemsSection: {
+        marginTop: spacing.s,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.m,
+    },
+    itemsCard: {
+        padding: 0,
+        overflow: 'hidden',
     },
     itemRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: spacing.s,
+        alignItems: 'center',
+        padding: spacing.m,
     },
-    tapHint: {
-        position: 'absolute',
-        bottom: spacing.m,
-        left: spacing.m,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: spacing.s,
-        paddingVertical: spacing.xs,
-        borderRadius: radius.s,
+    itemDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: spacing.m,
+    },
+    noItems: {
+        padding: spacing.xl,
+        alignItems: 'center',
     },
     modalContainer: {
         flex: 1,
@@ -277,8 +430,7 @@ const styles = StyleSheet.create({
     },
     modalCloseButton: {
         position: 'absolute',
-        top: 60,
-        right: 20,
+        right: spacing.m,
         width: 44,
         height: 44,
         borderRadius: 22,
@@ -299,7 +451,6 @@ const styles = StyleSheet.create({
     },
     modalPageIndicator: {
         position: 'absolute',
-        bottom: 60,
         backgroundColor: 'rgba(0,0,0,0.6)',
         paddingHorizontal: spacing.m,
         paddingVertical: spacing.s,
