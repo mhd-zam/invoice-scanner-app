@@ -1,101 +1,229 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowUp, Plus } from 'lucide-react-native';
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ArrowDownLeft, ArrowUpRight, Plus, Users, Wallet } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from '../../src/components/Button';
+import { Card } from '../../src/components/Card';
 import { Typography } from '../../src/components/Typography';
 import { DebtItem } from '../../src/features/debt/components/DebtItem';
 import { useDebtStore } from '../../src/features/debt/store/useDebtStore';
-import { radius, spacing, useAppTheme } from '../../src/theme';
+import { palette, radius, spacing, useAppTheme } from '../../src/theme';
+
+const FILTERS = ['All', 'To Receive', 'To Pay', 'Paid'];
 
 export default function DebtScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { colors } = useAppTheme();
     const debts = useDebtStore((s) => s.debts);
+    const [selectedFilter, setSelectedFilter] = useState('All');
 
-    const { totalReceive, totalGive } = useMemo(() => {
+    const { totalReceive, totalGive, paidCount, pendingCount } = useMemo(() => {
         return debts.reduce(
             (acc, debt) => {
-                if (!debt.isPaid) {
+                if (debt.isPaid) {
+                    acc.paidCount++;
+                } else {
+                    acc.pendingCount++;
                     if (debt.type === 'receive') acc.totalReceive += debt.amount;
                     else acc.totalGive += debt.amount;
                 }
                 return acc;
             },
-            { totalReceive: 0, totalGive: 0 }
+            { totalReceive: 0, totalGive: 0, paidCount: 0, pendingCount: 0 }
         );
     }, [debts]);
 
+    const netBalance = totalReceive - totalGive;
+
+    const filteredDebts = useMemo(() => {
+        switch (selectedFilter) {
+            case 'To Receive':
+                return debts.filter(d => d.type === 'receive' && !d.isPaid);
+            case 'To Pay':
+                return debts.filter(d => d.type === 'give' && !d.isPaid);
+            case 'Paid':
+                return debts.filter(d => d.isPaid);
+            default:
+                return debts;
+        }
+    }, [debts, selectedFilter]);
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
-                <View style={styles.header}>
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + spacing.m }]}>
+                <View>
                     <Typography variant="header1">Debt Log</Typography>
-                    <TouchableOpacity
-                        style={[styles.addButton, { backgroundColor: colors.primary }]}
-                        onPress={() => router.push('/debt/add')}
-                    >
-                        <Plus color="white" size={24} />
-                    </TouchableOpacity>
+                    <Typography variant="caption" color={colors.textSecondary}>
+                        {pendingCount} pending • {paidCount} settled
+                    </Typography>
                 </View>
+                <TouchableOpacity
+                    style={[styles.addButton, { backgroundColor: colors.primary }]}
+                    onPress={() => router.push('/debt/add')}
+                >
+                    <Plus color="white" size={22} />
+                </TouchableOpacity>
+            </View>
 
-                {/* Summary Cards */}
-                <View style={styles.summaryContainer}>
-                    <View style={[styles.summaryCard, { backgroundColor: colors.success + '15' }]}>
-                        <View style={styles.summaryLabel}>
-                            <ArrowDown size={16} color={colors.success} />
-                            <Typography variant="caption" color={colors.textSecondary} style={{ marginLeft: 4 }}>
-                                To Receive
+            <FlatList
+                data={filteredDebts}
+                keyExtractor={item => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.listContent}
+                ListHeaderComponent={
+                    <>
+                        {/* Summary Card */}
+                        <LinearGradient
+                            colors={[colors.primary, palette.primary[800]]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.summaryCard}
+                        >
+                            <View style={styles.summaryHeader}>
+                                <View style={styles.summaryBadge}>
+                                    <Wallet size={14} color="white" />
+                                    <Typography variant="caption" color="white" style={{ marginLeft: 4 }}>
+                                        Net Balance
+                                    </Typography>
+                                </View>
+                            </View>
+
+                            <View style={styles.netBalanceRow}>
+                                <Typography
+                                    variant="display"
+                                    color="white"
+                                    style={styles.netAmount}
+                                >
+                                    {netBalance >= 0 ? '+' : ''}₹{netBalance.toLocaleString('en-IN')}
+                                </Typography>
+                                <View style={[
+                                    styles.netIndicator,
+                                    { backgroundColor: netBalance >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' }
+                                ]}>
+                                    <Typography variant="caption" color="white">
+                                        {netBalance >= 0 ? 'You\'re owed' : 'You owe'}
+                                    </Typography>
+                                </View>
+                            </View>
+                        </LinearGradient>
+
+                        {/* Quick Stats */}
+                        <View style={styles.statsRow}>
+                            <TouchableOpacity
+                                style={[styles.statCard, { backgroundColor: colors.success + '12' }]}
+                                onPress={() => setSelectedFilter('To Receive')}
+                                activeOpacity={0.7}
+                            >
+                                <View style={[styles.statIcon, { backgroundColor: colors.success + '20' }]}>
+                                    <ArrowDownLeft size={18} color={colors.success} />
+                                </View>
+                                <View style={styles.statContent}>
+                                    <Typography variant="caption" color={colors.textSecondary}>To Receive</Typography>
+                                    <Typography variant="header3" color={colors.success}>
+                                        ₹{totalReceive.toLocaleString('en-IN')}
+                                    </Typography>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.statCard, { backgroundColor: colors.error + '12' }]}
+                                onPress={() => setSelectedFilter('To Pay')}
+                                activeOpacity={0.7}
+                            >
+                                <View style={[styles.statIcon, { backgroundColor: colors.error + '20' }]}>
+                                    <ArrowUpRight size={18} color={colors.error} />
+                                </View>
+                                <View style={styles.statContent}>
+                                    <Typography variant="caption" color={colors.textSecondary}>To Pay</Typography>
+                                    <Typography variant="header3" color={colors.error}>
+                                        ₹{totalGive.toLocaleString('en-IN')}
+                                    </Typography>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Filter Tabs */}
+                        <View style={styles.filterContainer}>
+                            <FlatList
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={FILTERS}
+                                keyExtractor={item => item}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.filterChip,
+                                            {
+                                                backgroundColor: selectedFilter === item ? colors.primary : colors.card,
+                                                borderColor: selectedFilter === item ? colors.primary : colors.border,
+                                            }
+                                        ]}
+                                        onPress={() => setSelectedFilter(item)}
+                                    >
+                                        <Typography
+                                            variant="label"
+                                            color={selectedFilter === item ? 'white' : colors.text}
+                                        >
+                                            {item}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                )}
+                                contentContainerStyle={styles.filterList}
+                            />
+                        </View>
+
+                        {/* Section Header */}
+                        <View style={styles.sectionHeader}>
+                            <Typography variant="header3">Transactions</Typography>
+                            <Typography variant="caption" color={colors.textSecondary}>
+                                {filteredDebts.length} records
                             </Typography>
                         </View>
-                        <Typography variant="header2" color={colors.success}>
-                            ₹{totalReceive.toFixed(2)}
-                        </Typography>
-                    </View>
-
-                    <View style={styles.gap} />
-
-                    <View style={[styles.summaryCard, { backgroundColor: colors.error + '15' }]}>
-                        <View style={styles.summaryLabel}>
-                            <ArrowUp size={16} color={colors.error} />
-                            <Typography variant="caption" color={colors.textSecondary} style={{ marginLeft: 4 }}>
-                                To Pay
-                            </Typography>
-                        </View>
-                        <Typography variant="header2" color={colors.error}>
-                            ₹{totalGive.toFixed(2)}
-                        </Typography>
-                    </View>
-                </View>
-
-                <Typography variant="header3" style={{ marginVertical: spacing.m }}>
-                    Transactions
-                </Typography>
-
-                {debts.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Typography variant="body" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-                            No debts recorded.
-                        </Typography>
-                        <Button
-                            title="Add a record"
-                            variant="ghost"
-                            onPress={() => router.push('/debt/add')}
-                            style={{ marginTop: spacing.m }}
-                        />
-                    </View>
-                ) : (
-                    debts.map((debt) => (
-                        <DebtItem
-                            key={debt.id}
-                            debt={debt}
-                            onPress={() => router.push({ pathname: '/debt/add', params: { ...debt, isEditing: 'true' } as any })}
-                        />
-                    ))
+                    </>
+                }
+                renderItem={({ item }) => (
+                    <DebtItem
+                        debt={item}
+                        onPress={() => router.push({
+                            pathname: '/debt/add',
+                            params: { ...item, isEditing: 'true' } as any
+                        })}
+                    />
                 )}
-            </ScrollView>
+                ListEmptyComponent={
+                    <Card style={styles.emptyState}>
+                        <View style={[styles.emptyIcon, { backgroundColor: colors.primary + '15' }]}>
+                            <Users size={32} color={colors.primary} />
+                        </View>
+                        <Typography variant="header3" style={{ marginTop: spacing.m }}>
+                            {selectedFilter === 'All' ? 'No debts yet' : `No ${selectedFilter.toLowerCase()} debts`}
+                        </Typography>
+                        <Typography
+                            variant="body"
+                            color={colors.textSecondary}
+                            style={{ textAlign: 'center', marginTop: spacing.xs }}
+                        >
+                            {selectedFilter === 'All'
+                                ? 'Track money you lend or borrow'
+                                : 'All clear in this category!'}
+                        </Typography>
+                        {selectedFilter === 'All' && (
+                            <TouchableOpacity
+                                style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+                                onPress={() => router.push('/debt/add')}
+                            >
+                                <Plus size={18} color="white" />
+                                <Typography variant="bodyBold" color="white" style={{ marginLeft: spacing.xs }}>
+                                    Add Record
+                                </Typography>
+                            </TouchableOpacity>
+                        )}
+                    </Card>
+                }
+            />
         </View>
     );
 }
@@ -104,46 +232,126 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    content: {
-        padding: spacing.l,
-        // paddingTop: spacing.xl * 2, // Replaced with inline style for dynamic inset
-        paddingBottom: 100, // Space for tab bar
-    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.l,
+        paddingHorizontal: spacing.l,
+        paddingBottom: spacing.m,
     },
     addButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#7C3AED',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    summaryContainer: {
-        flexDirection: 'row',
-        marginBottom: spacing.l,
+    listContent: {
+        paddingHorizontal: spacing.l,
+        paddingBottom: 120,
     },
     summaryCard: {
-        flex: 1,
-        padding: spacing.m,
-        borderRadius: radius.m,
-        alignItems: 'flex-start',
+        padding: spacing.l,
+        borderRadius: radius.xl,
+        marginBottom: spacing.m,
+        shadowColor: '#7C3AED',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 8,
     },
-    summaryLabel: {
+    summaryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+    },
+    summaryBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xs,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
     },
-    gap: {
-        width: spacing.m,
+    netBalanceRow: {
+        marginTop: spacing.m,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    netAmount: {
+        fontSize: 36,
+        lineHeight: 44,
+        fontWeight: '700',
+    },
+    netIndicator: {
+        paddingHorizontal: spacing.m,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: spacing.m,
+        marginBottom: spacing.l,
+    },
+    statCard: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.m,
+        borderRadius: radius.l,
+    },
+    statIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.m,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.s,
+    },
+    statContent: {
+        flex: 1,
+    },
+    filterContainer: {
+        marginBottom: spacing.m,
+    },
+    filterList: {
+        gap: spacing.s,
+    },
+    filterChip: {
+        paddingHorizontal: spacing.m,
+        paddingVertical: spacing.s,
+        borderRadius: radius.full,
+        borderWidth: 1,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.m,
     },
     emptyState: {
         padding: spacing.xl,
         alignItems: 'center',
+        marginTop: spacing.m,
+    },
+    emptyIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
         justifyContent: 'center',
-        marginTop: spacing.xl,
+        alignItems: 'center',
+    },
+    emptyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.l,
+        paddingVertical: spacing.m,
+        borderRadius: radius.full,
+        marginTop: spacing.l,
     },
 });

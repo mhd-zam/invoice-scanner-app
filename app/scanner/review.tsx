@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { Input } from '../../src/components/Input';
 import { Typography } from '../../src/components/Typography';
@@ -11,6 +13,7 @@ import { radius, spacing, useAppTheme } from '../../src/theme';
 export default function ReviewScreen() {
     const { uris } = useLocalSearchParams();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const addExpense = useExpenseStore(s => s.addExpense);
     const { colors } = useAppTheme();
 
@@ -69,6 +72,18 @@ export default function ReviewScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1, backgroundColor: colors.background }}
         >
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + spacing.s, backgroundColor: colors.background }]}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={[styles.backButton, { backgroundColor: colors.card }]}
+                >
+                    <ChevronLeft size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Typography variant="header3">Review Receipt</Typography>
+                <View style={{ width: 40 }} />
+            </View>
+
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
                 <ScrollView
                     horizontal
@@ -149,6 +164,20 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
     },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.m,
+        paddingBottom: spacing.s,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.m,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     imagePage: {
         width: width,
         height: 300,
@@ -181,3 +210,4 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 });
+

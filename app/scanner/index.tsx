@@ -1,7 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Camera, X, Zap, ZapOff } from 'lucide-react-native';
+import { Camera, Image as ImageIcon, X, Zap, ZapOff } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../src/components/Button';
@@ -87,6 +88,27 @@ export default function ScannerScreen() {
         }
     };
 
+    const pickFromGallery = async () => {
+        try {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsMultipleSelection: true,
+                quality: 0.8,
+                orderedSelection: true,
+                selectionLimit: 10,
+            });
+
+            if (!result.canceled && result.assets.length > 0 && isMounted.current) {
+                const newUris = result.assets.map(asset => asset.uri);
+                setCapturedImages(prev => [...prev, ...newUris]);
+            }
+        } catch (error) {
+            console.error("Failed to pick from gallery", error);
+        }
+    };
+
     const handleDone = () => {
         if (capturedImages.length > 0) {
             router.push({
@@ -128,14 +150,19 @@ export default function ScannerScreen() {
 
                 {/* Capture Button and Controls */}
                 <View style={styles.footer}>
+                    {/* Gallery Button */}
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
-                        {/* Placeholder for left side if needed */}
+                        <TouchableOpacity onPress={pickFromGallery} style={styles.galleryButton}>
+                            <ImageIcon color="white" size={24} />
+                        </TouchableOpacity>
                     </View>
 
+                    {/* Capture Button */}
                     <TouchableOpacity onPress={takePicture} style={styles.captureBtnInner}>
                         <View style={styles.captureBtnOuter} />
                     </TouchableOpacity>
 
+                    {/* Done Button */}
                     <View style={{ flex: 1, alignItems: 'flex-end' }}>
                         {capturedImages.length > 0 && (
                             <View style={styles.doneContainer}>
@@ -235,5 +262,15 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: 'black',
         backgroundColor: 'white',
+    },
+    galleryButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
 });

@@ -1,30 +1,42 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Dimensions, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Typography } from '../../src/components/Typography'; // Adjust path
-import { useExpenseStore } from '../../src/features/expenses/store/useExpenseStore'; // Adjust path
-import { radius, spacing, useAppTheme } from '../../src/theme'; // Adjust path
+import { ChevronLeft, Trash2, X } from 'lucide-react-native';
+import { useState } from 'react';
+import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Typography } from '../../src/components/Typography';
+import { useExpenseStore } from '../../src/features/expenses/store/useExpenseStore';
+import { radius, spacing, useAppTheme } from '../../src/theme';
 
 const { width } = Dimensions.get('window');
 
 export default function ExpenseDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { colors } = useAppTheme();
     const expense = useExpenseStore(s => s.getExpenseById(id as string));
     const deleteExpense = useExpenseStore(s => s.deleteExpense);
 
     if (!expense) {
         return (
-            <View style={[styles.center, { backgroundColor: colors.background }]}>
+            <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
                 <Typography variant="header3">Expense not found</Typography>
             </View>
         );
     }
 
     const handleDelete = () => {
-        deleteExpense(expense.id);
-        router.back();
+        Alert.alert("Delete Expense", "Are you sure you want to delete this expense?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                    deleteExpense(expense.id);
+                    router.back();
+                }
+            }
+        ]);
     };
 
     const imageUrls = expense.imageUrls && expense.imageUrls.length > 0
@@ -32,26 +44,28 @@ export default function ExpenseDetailScreen() {
         // @ts-ignore: Legacy support if migration failed or strictness isn't perfect
         : (expense.imageUrl ? [expense.imageUrl] : []);
 
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <Stack.Screen
-                options={{
-                    title: 'Expense Details',
-                    headerStyle: { backgroundColor: colors.background },
-                    headerTintColor: colors.text,
-                    headerShadowVisible: false,
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: spacing.m }}>
-                            <Ionicons name="arrow-back" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                    ),
-                    headerRight: () => (
-                        <TouchableOpacity onPress={handleDelete}>
-                            <Ionicons name="trash-outline" size={24} color={colors.error || 'red'} />
-                        </TouchableOpacity>
-                    )
-                }}
-            />
+            <Stack.Screen options={{ headerShown: false }} />
+
+            {/* Custom Header */}
+            <View style={[styles.header, { paddingTop: insets.top + spacing.s, backgroundColor: colors.background }]}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={[styles.headerButton, { backgroundColor: colors.card }]}
+                >
+                    <ChevronLeft size={24} color={colors.text} />
+                </TouchableOpacity>
+                <Typography variant="header3">Expense Details</Typography>
+                <TouchableOpacity
+                    onPress={handleDelete}
+                    style={[styles.headerButton, { backgroundColor: colors.error + '15' }]}
+                >
+                    <Trash2 size={20} color={colors.error} />
+                </TouchableOpacity>
+            </View>
 
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Image Carousel */}
@@ -63,12 +77,20 @@ export default function ExpenseDetailScreen() {
                         style={{ height: 400, backgroundColor: colors.muted, marginBottom: spacing.l }}
                     >
                         {imageUrls.map((img, index) => (
-                            <View key={index} style={styles.imagePage}>
+                            <TouchableOpacity
+                                key={index}
+                                style={styles.imagePage}
+                                onPress={() => setSelectedImageIndex(index)}
+                                activeOpacity={0.9}
+                            >
                                 <Image source={{ uri: img }} style={styles.image} resizeMode="contain" />
                                 <View style={styles.pageIndicator}>
                                     <Typography variant="label" color="white">{index + 1}/{imageUrls.length}</Typography>
                                 </View>
-                            </View>
+                                <View style={styles.tapHint}>
+                                    <Typography variant="caption" color="white">Tap to preview</Typography>
+                                </View>
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                 ) : (
@@ -117,6 +139,46 @@ export default function ExpenseDetailScreen() {
                     )}
                 </View>
             </ScrollView>
+
+            {/* Fullscreen Image Preview Modal */}
+            <Modal
+                visible={selectedImageIndex !== null}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSelectedImageIndex(null)}
+            >
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity
+                        style={styles.modalCloseButton}
+                        onPress={() => setSelectedImageIndex(null)}
+                    >
+                        <X size={28} color="white" />
+                    </TouchableOpacity>
+
+                    <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        contentOffset={{ x: (selectedImageIndex || 0) * width, y: 0 }}
+                    >
+                        {imageUrls.map((img, index) => (
+                            <View key={index} style={styles.modalImageContainer}>
+                                <Image
+                                    source={{ uri: img }}
+                                    style={styles.modalImage}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        ))}
+                    </ScrollView>
+
+                    <View style={styles.modalPageIndicator}>
+                        <Typography variant="body" color="white">
+                            {(selectedImageIndex || 0) + 1} / {imageUrls.length}
+                        </Typography>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -127,6 +189,20 @@ const styles = StyleSheet.create({
     },
     center: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.m,
+        paddingBottom: spacing.s,
+    },
+    headerButton: {
+        width: 40,
+        height: 40,
+        borderRadius: radius.m,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -183,5 +259,50 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: spacing.s,
+    },
+    tapHint: {
+        position: 'absolute',
+        bottom: spacing.m,
+        left: spacing.m,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.s,
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalCloseButton: {
+        position: 'absolute',
+        top: 60,
+        right: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    modalImageContainer: {
+        width: width,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalImage: {
+        width: width,
+        height: '80%',
+    },
+    modalPageIndicator: {
+        position: 'absolute',
+        bottom: 60,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: spacing.m,
+        paddingVertical: spacing.s,
+        borderRadius: radius.l,
     },
 });
