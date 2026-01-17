@@ -1,16 +1,63 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Mail } from 'lucide-react-native';
-import React from 'react';
-import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../src/store/authStore';
 import { spacing, useAppTheme } from '../src/theme';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
     const router = useRouter();
     const { colors } = useAppTheme();
-    const { signIn, isLoading } = useAuth();
+    const { signInWithIdToken, signInWithApple, isAuthenticated, isLoading } = useAuth();
+
+    // IMPORTANT: Replace 'your-expo-username' with your actual Expo username
+    // You can find it in your Expo account settings or by running `npx expo whoami`
+    // If you don't have one, you'll need to create one to use the Auth Proxy.
+    const redirectUri = 'https://auth.expo.io/@mhd_zam/invoice-scanner-app';
+
+    console.log("DEBUG: Using Redirect URI:", redirectUri);
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        redirectUri,
+    });
+
+    const [isAppleAuthAvailable, setIsAppleAuthAvailable] = React.useState(false);
+
+    useEffect(() => {
+        AppleAuthentication.isAvailableAsync().then(setIsAppleAuthAvailable);
+    }, []);
+
+    useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            if (id_token) {
+                signInWithIdToken('google', id_token);
+            } else {
+                Alert.alert('Error', 'No ID token found in Google response.');
+            }
+        }
+    }, [response, signInWithIdToken]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.replace('/(tabs)/debt'); // Assuming debt is the home/dashboard
+        }
+    }, [isAuthenticated, router]);
+
+    const handleEmailSignIn = () => {
+        Alert.alert("Not Implemented", "Email sign-in is not yet implemented with Supabase.");
+    }
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -54,22 +101,32 @@ export default function LoginScreen() {
                     <View style={styles.actions}>
                         <TouchableOpacity
                             style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
-                            onPress={() => signIn('user@example.com')}
+                            onPress={handleEmailSignIn}
                             disabled={isLoading}
                         >
                             <Mail size={20} color="white" style={styles.icon} />
                             <Text style={styles.primaryButtonText}>{isLoading ? 'Signing in...' : 'Sign in with Email'}</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.button, styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                            onPress={() => promptAsync()}
+                            disabled={isLoading || !request}
+                        >
                             <Ionicons name="logo-google" size={20} color={colors.text} style={styles.icon} />
                             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Sign in with Google</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.button, styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                            <Ionicons name="logo-apple" size={20} color={colors.text} style={styles.icon} />
-                            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Sign in with Apple</Text>
-                        </TouchableOpacity>
+                        {isAppleAuthAvailable && (
+                            <TouchableOpacity
+                                style={[styles.button, styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                                onPress={signInWithApple}
+                                disabled={isLoading}
+                            >
+                                <Ionicons name="logo-apple" size={20} color={colors.text} style={styles.icon} />
+                                <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Sign in with Apple</Text>
+                            </TouchableOpacity>
+                        )}
 
                         <View style={styles.footer}>
                             <Text style={[styles.footerText, { color: colors.textSecondary }]}>Don't have an account? </Text>

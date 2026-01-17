@@ -15,14 +15,13 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const { isAuthenticated, hydrate } = useAuth();
+  const { isAuthenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      hydrate(); // Load auth state from storage
     }
   }, [loaded]);
 
@@ -57,7 +56,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="scanner"
+          name="scanner/index"
           options={{
             presentation: 'fullScreenModal',
             animation: 'slide_from_bottom',
